@@ -7,6 +7,7 @@ void task3_handler(void); //task3
 void task4_handler(void); //task4
 
 void init_systick_timer(uint32_t tick_hz);
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_stack);
 
 /* Some stack memory calculations */
 #define SIZE_TASK_STACK    1024U
@@ -28,6 +29,8 @@ void init_systick_timer(uint32_t tick_hz);
 
 int main(void)
 {
+	init_scheduler_stack(SCHED_STACK_START);
+
 	init_systick_timer(TICK_HZ);
     /* Loop forever */
 	for(;;);
@@ -74,6 +77,12 @@ void init_systick_timer(uint32_t tick_hz){
 
 	//Enable the systick
 	*pSCSR |= ( 1 << 0); //enables the counter
+}
+
+__attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_stack){
+	asm volatile("MSR MSP,%0"::"r"(sched_top_stack):);
+	//volatile("MSR MSP,R0"); 也可以用這個指令
+	asm volatile("BX LR");
 }
 
 void SysTick_Handler(void){
