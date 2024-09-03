@@ -151,7 +151,7 @@ __attribute__((naked)) void switch_sp_to_psp(void){
 	asm volatile("BX LR");
 }
 
-void SysTick_Handler(void){
+__attribute__((naked)) void SysTick_Handler(void){
 	/*Save the context of current task*/
 	//1.Get current running task's PSP value
 	asm volatile("MRS R0, PSP");
@@ -159,6 +159,8 @@ void SysTick_Handler(void){
 	//2. Using that PSP value store SF2(R4~R11)
 	//這裡不能用PUSH，因為MSP會被影響
 	asm volatile("STMDB R0!,{R4-R11}"); //R0更新PSP value, 儲存R4~R11
+
+	asm volatile("PUSH {LR}"); //因為底下BL的function call會改掉LR，所以先做保存
 
 	//3.Save the current value of PSP
 	asm volatile("BL save_psp_value");
@@ -176,6 +178,11 @@ void SysTick_Handler(void){
 
 	//4.Update PSP and exit
 	asm volatile("MSR PSP, R0");
+
+	asm volatile("POP {LR}");
+
+	/*由於是naked function，不會有epilogue，所以要自己寫exception exit*/
+	asm volatile("BX LR");
 }
 
 void HardFault_Handler(void)
