@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "main.h"
+#include "led.h"
 
 void task1_handler(void); //task1
 void task2_handler(void); //task2
@@ -30,6 +31,8 @@ int main(void)
 
 	init_tasks_stack();
 
+	led_init_all();
+
 	init_systick_timer(TICK_HZ);
 
 	switch_sp_to_psp(); //前面是使用MSP，接下來要使用PSP
@@ -41,25 +44,37 @@ int main(void)
 
 void task1_handler(void){
 	while(1){
-		printf("This is task1\n");
+		led_on(LED_GREEN);
+		delay(DELAY_COUNT_1S);
+		led_off(LED_GREEN);
+		delay(DELAY_COUNT_1S);
 	}
 }
 
 void task2_handler(void){
 	while(1){
-		printf("This is task2\n");
+		led_on(LED_ORANGE);
+		delay(DELAY_COUNT_500MS);
+		led_off(LED_ORANGE);
+		delay(DELAY_COUNT_500MS);
 	}
 }
 
 void task3_handler(void){
 	while(1){
-		printf("This is task3\n");
+		led_on(LED_BLUE);
+		delay(DELAY_COUNT_250MS);
+		led_off(LED_BLUE);
+		delay(DELAY_COUNT_250MS);
 	}
 }
 
 void task4_handler(void){
 	while(1){
-		printf("This is task4\n");
+		led_on(LED_RED);
+		delay(DELAY_COUNT_125MS);
+		led_off(LED_RED);
+		delay(DELAY_COUNT_125MS);
 	}
 }
 
