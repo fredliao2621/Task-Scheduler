@@ -127,6 +127,15 @@ uint32_t get_psp_value(void){
 	return psp_of_tasks[current_task];
 }
 
+void save_psp_value(uint32_t current_psp_value){
+	psp_of_tasks[current_task] = current_psp_value;
+}
+
+void update_next_task(void){
+	current_task++;
+	current_task %= MAX_TASKS;
+}
+
 __attribute__((naked)) void switch_sp_to_psp(void){
 	// 1.Initialize the PSP with TASK1 stack start address
 	//Get the value of PSP of current task
@@ -143,7 +152,30 @@ __attribute__((naked)) void switch_sp_to_psp(void){
 }
 
 void SysTick_Handler(void){
+	/*Save the context of current task*/
+	//1.Get current running task's PSP value
+	asm volatile("MRS R0, PSP");
 
+	//2. Using that PSP value store SF2(R4~R11)
+	//這裡不能用PUSH，因為MSP會被影響
+	asm volatile("STMDB R0!,{R4-R11}"); //R0更新PSP value, 儲存R4~R11
+
+	//3.Save the current value of PSP
+	asm volatile("BL save_psp_value");
+
+
+	/*Retrieve the context of next task*/
+	//1.Decide the next task to run
+	asm volatile("BL update_next_task");
+
+	//2.Get its past PSP value
+	asm volatile("BL get_psp_value");
+
+	//3.Using that PSP value retrieve SF2(R4~R11)
+	asm volatile("LDMIA R0!, {R4-R11}");
+
+	//4.Update PSP and exit
+	asm volatile("MSR PSP, R0");
 }
 
 void HardFault_Handler(void)

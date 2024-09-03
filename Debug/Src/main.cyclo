@@ -8,8 +8,10 @@
 ../Src/main.c:93:6:init_tasks_stack	3
 ../Src/main.c:117:6:enable_processor_faults	1
 ../Src/main.c:126:10:get_psp_value	1
-../Src/main.c:130:29:switch_sp_to_psp	1
-../Src/main.c:145:6:SysTick_Handler	1
-../Src/main.c:149:6:HardFault_Handler	1
-../Src/main.c:156:6:MemManage_Handler	1
-../Src/main.c:162:6:BusFault_Handler	1
+../Src/main.c:130:6:save_psp_value	1
+../Src/main.c:134:6:update_next_task	1
+../Src/main.c:139:29:switch_sp_to_psp	1
+../Src/main.c:154:6:SysTick_Handler	1
+../Src/main.c:181:6:HardFault_Handler	1
+../Src/main.c:188:6:MemManage_Handler	1
+../Src/main.c:194:6:BusFault_Handler	1
