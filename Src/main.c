@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include "main.h"
 
 void task1_handler(void); //task1
 void task2_handler(void); //task2
@@ -8,28 +9,21 @@ void task4_handler(void); //task4
 
 void init_systick_timer(uint32_t tick_hz);
 __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_stack);
+void init_tasks_stack(void);
 
-/* Some stack memory calculations */
-#define SIZE_TASK_STACK    1024U
-#define SIZE_SCHED_STACK   1024U
-
-#define SRAM_START         0x20000000U
-#define SIZE_SRAM          ((128) * (1024))
-#define SRAM_END           ((SRAM_START) + (SIZE_SRAM))
-
-#define T1_STACK_START     SRAM_END
-#define T2_STACK_START     ((SRAM_END) - (1 * SIZE_TASK_STACK))
-#define T3_STACK_START     ((SRAM_END) - (2 * SIZE_TASK_STACK))
-#define T4_STACK_START     ((SRAM_END) - (3 * SIZE_TASK_STACK))
-#define SCHED_STACK_START  ((SRAM_END) - (4 * SIZE_TASK_STACK))
-
-#define TICK_HZ             1000U
-#define HSI_CLK             16000000U
-#define SYSTICK_TIM_CLK     HSI_CLK
+uint32_t psp_of_tasks[MAX_TASKS] = {T1_STACK_START, T2_STACK_START, T3_STACK_START, T4_STACK_START};
+uint32_t task_handlers[MAX_TASKS];
 
 int main(void)
 {
-	init_scheduler_stack(SCHED_STACK_START);
+	init_scheduler_stack(SCHED_STACK_START); //初始化MSP
+
+	task_handlers[0] = (uint32_t)task1_handler; //不同task handler的位址
+	task_handlers[1] = (uint32_t)task2_handler;
+	task_handlers[2] = (uint32_t)task3_handler;
+	task_handlers[3] = (uint32_t)task4_handler;
+
+	init_tasks_stack();
 
 	init_systick_timer(TICK_HZ);
     /* Loop forever */
@@ -83,6 +77,30 @@ __attribute__((naked)) void init_scheduler_stack(uint32_t sched_top_stack){
 	asm volatile("MSR MSP,%0"::"r"(sched_top_stack):);
 	//volatile("MSR MSP,R0"); 也可以用這個指令
 	asm volatile("BX LR");
+}
+
+void init_tasks_stack(void){
+	uint32_t *pPSP;
+
+	for(int i = 0; i < MAX_TASKS; i++){
+		pPSP = (uint32_t*)psp_of_tasks[i];
+
+		pPSP--;
+		*pPSP = DUMMY_XPSR; //0X01000000
+
+		pPSP--; //PC
+		*pPSP = task_handlers[i];
+
+		pPSP--; //LR
+		*pPSP = 0xFFFFFFFD;
+
+		for(int j = 0 ; j < 13 ; j++) //把剩下的R0~R12存0
+		{
+			pPSP--;
+			*pPSP = 0;
+		}
+		psp_of_tasks[i] = (uint32_t)pPSP;
+	}
 }
 
 void SysTick_Handler(void){
