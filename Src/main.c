@@ -14,8 +14,10 @@ void init_tasks_stack(void);
 void enable_processor_faults(void);
 __attribute__((naked)) void switch_sp_to_psp(void);
 
+void task_delay(uint32_t tick_count);
 
-uint8_t current_task = 0; //task1 is running
+uint8_t current_task = 1; //task1 is running
+uint32_t g_tick_count = 0;
 
 typedef struct{
 	uint32_t psp_value;
@@ -43,6 +45,10 @@ int main(void)
 	task1_handler();
     /* Loop forever */
 	for(;;);
+}
+
+void idle_task(void){
+	while(1);
 }
 
 void task1_handler(void){
@@ -114,16 +120,19 @@ void init_tasks_stack(void){
 	user_tasks[1].current_state = TASK_RUNNING_STATE;
 	user_tasks[2].current_state = TASK_RUNNING_STATE;
 	user_tasks[3].current_state = TASK_RUNNING_STATE;
+	user_tasks[4].current_state = TASK_RUNNING_STATE;
 
-	user_tasks[0].psp_value = T1_STACK_START;
-	user_tasks[1].psp_value = T2_STACK_START;
-	user_tasks[2].psp_value = T3_STACK_START;
-	user_tasks[3].psp_value = T4_STACK_START;
+	user_tasks[0].psp_value = IDLE_STACK_START;
+	user_tasks[1].psp_value = T1_STACK_START;
+	user_tasks[2].psp_value = T2_STACK_START;
+	user_tasks[3].psp_value = T3_STACK_START;
+	user_tasks[4].psp_value = T4_STACK_START;
 
-	user_tasks[0].task_handler = task1_handler;
-	user_tasks[1].task_handler = task2_handler;
-	user_tasks[2].task_handler = task3_handler;
-	user_tasks[3].task_handler = task4_handler;
+	user_tasks[0].task_handler = idle_task;
+	user_tasks[1].task_handler = task1_handler;
+	user_tasks[2].task_handler = task2_handler;
+	user_tasks[3].task_handler = task3_handler;
+	user_tasks[4].task_handler = task4_handler;
 
 	uint32_t *pPSP;
 
@@ -184,6 +193,12 @@ __attribute__((naked)) void switch_sp_to_psp(void){
 	asm volatile("MSR CONTROL, R0");
 	asm volatile("BX LR");
 }
+
+void task_delay(uint32_t tick_count){
+	user_tasks[current_task].block_count = g_tick_count + tick_count;
+	user_tasks[current_task].current_state = TASK_BLOCKED_STATE;
+}
+
 
 __attribute__((naked)) void SysTick_Handler(void){
 	/*Save the context of current task*/
