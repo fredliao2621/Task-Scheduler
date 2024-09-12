@@ -54,36 +54,36 @@ void idle_task(void){
 void task1_handler(void){
 	while(1){
 		led_on(LED_GREEN);
-		delay(DELAY_COUNT_1S);
+		task_delay(1000);
 		led_off(LED_GREEN);
-		delay(DELAY_COUNT_1S);
+		task_delay(500);
 	}
 }
 
 void task2_handler(void){
 	while(1){
 		led_on(LED_ORANGE);
-		delay(DELAY_COUNT_500MS);
+		task_delay(500);
 		led_off(LED_ORANGE);
-		delay(DELAY_COUNT_500MS);
+		task_delay(500);
 	}
 }
 
 void task3_handler(void){
 	while(1){
 		led_on(LED_BLUE);
-		delay(DELAY_COUNT_250MS);
+		task_delay(250);
 		led_off(LED_BLUE);
-		delay(DELAY_COUNT_250MS);
+		task_delay(250);
 	}
 }
 
 void task4_handler(void){
 	while(1){
 		led_on(LED_RED);
-		delay(DELAY_COUNT_125MS);
+		task_delay(125);
 		led_off(LED_RED);
-		delay(DELAY_COUNT_125MS);
+		task_delay(125);
 	}
 }
 
@@ -175,8 +175,19 @@ void save_psp_value(uint32_t current_psp_value){
 }
 
 void update_next_task(void){
-	current_task++;
-	current_task %= MAX_TASKS;
+	int state = TASK_BLOCKED_STATE;
+
+	for(int i= 0 ; i < (MAX_TASKS) ; i++)
+	{
+		current_task++;
+	    current_task %= MAX_TASKS;
+		state = user_tasks[current_task].current_state;
+		if( (state == TASK_READY_STATE) && (current_task != 0) ) //如果ready，而且不是idle task
+			break;
+	}
+
+	if(state != TASK_READY_STATE)
+		current_task = 0;
 }
 
 __attribute__((naked)) void switch_sp_to_psp(void){
@@ -199,12 +210,18 @@ void schedule(void){
 	uint32_t *pICSR = (uint32_t*)0xE000ED04;
 	*pICSR |= (1 << 28);
 }
+
 void task_delay(uint32_t tick_count){
+	//disable inturrupt
+	INTERRUPT_DISABLE();
+
 	if(current_task){//0是idle task，不要管
 		user_tasks[current_task].block_count = g_tick_count + tick_count;
 		user_tasks[current_task].current_state = TASK_BLOCKED_STATE;
 		schedule();
 	}
+	//enable inturrupt
+	INTERRUPT_ENABLE();
 }
 
 __attribute__((naked)) void PendSV_Handler(void){
@@ -254,7 +271,6 @@ void unblock_tasks(void){
 		}
 	}
 }
-
 
 void SysTick_Handler(void){
 	uint32_t *pICSR = (uint32_t*)0xE000ED04;
