@@ -56,7 +56,7 @@ void task1_handler(void){
 		led_on(LED_GREEN);
 		task_delay(1000);
 		led_off(LED_GREEN);
-		task_delay(500);
+		task_delay(1000);
 	}
 }
 
